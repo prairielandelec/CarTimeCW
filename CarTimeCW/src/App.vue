@@ -15,7 +15,7 @@ const inputValue = ref('')
 
 const synth = window.speechSynthesis
 
-const groupSizze = 5
+const groupSize = 5
 
 function logAndSay() {
   console.log(inputValue)
@@ -66,14 +66,14 @@ function playGroups(groups: string) {
       const handler = (eventValue: any) => {
         console.log(`'char:end' event received for: ${eventValue}, expected: ${char}`)
         if (eventValue === 'char:end') {
-          
-            console.log('Finished playing character:', eventValue)
-            // Unsubscribe the listener
-            player.subscribers = player.subscribers.filter(
-              (sub) => !(sub.event === 'char:end' && sub.cb === handler)
-            )
 
-            resolve()
+          console.log('Finished playing character:', eventValue)
+          // Unsubscribe the listener
+          player.subscribers = player.subscribers.filter(
+            (sub) => !(sub.event === 'char:end' && sub.cb === handler)
+          )
+
+          resolve()
         }
       }
       console.log(`Subscribing to 'char:end' for: ${char}`)
@@ -85,14 +85,28 @@ function playGroups(groups: string) {
 
   async function playAllCharacters() {
     console.log("playGroupsAsync " + groups)
-    for (const letter of letters) {
-      console.log(`Awaiting playCharacter for: ${letter}`)
-      await playCharacter(player, letter)
-      console.log(`Finished awaiting playCharacter for: ${letter}`)
-      await sayLetter(letter)
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      console.log(`Finished say playCharacter for: ${letter}`)
+    const groupArr = [];
+    for (let i = 0; i < letters.length; i += groupSize) {
+      groupArr.push(letters.slice(i, i + groupSize));
     }
+    for (let group of groupArr) {
+      for (const letter of group) {
+        console.log(`Awaiting playCharacter for: ${letter}`)
+        await playCharacter(player, letter)
+        console.log(`Finished awaiting playCharacter for: ${letter}`)
+        console.log(`Finished say playCharacter for: ${letter}`)
+      }
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      for (const letter of group) {
+        await sayLetter(letter)
+        await new Promise(resolve => setTimeout(resolve, 100));
+        console.log(`Finished say playCharacter for: ${letter}`)
+      }
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+    }
+
     console.log('Finished playing all characters.')
   }
 
