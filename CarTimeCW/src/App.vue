@@ -19,64 +19,84 @@ const groupSizze = 5
 
 function logAndSay() {
   console.log(inputValue)
+  sayLetter(' ')
   playGroups(inputValue.value)
 }
 
-function sayLetter(text: string) {
-  return new Promise(resolve => {
+async function sayLetter(text: string): Promise<void> {
+  return new Promise((resolve) => {
+    if (!synth) {
+      console.warn('Speech synthesis not available.');
+      resolve();
+      return;
+    }
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.onend = resolve;
-    speechSynthesis.speak(utterance);
+
+    utterance.onstart = () => {
+      console.log(`Speech started for: ${text}`);
+    };
+
+    utterance.onend = () => {
+      console.log(`Speech ended for: ${text}`);
+      resolve();
+    };
+
+    utterance.onerror = (event) => {
+      console.error(`Speech synthesis error for: ${text}`, event);
+      resolve(); // Ensure the Promise resolves even on error
+    };
+
+    console.log(`Speaking: ${text}`);
+    synth.speak(utterance);
   });
 }
 
 
 function playGroups(groups: string) {
-  const letters = Array.from(groups);
-  const synth = window.speechSynthesis; // Assuming synth is defined elsewhere
+  const letters = Array.from(groups)
 
   const player = new Player({
     wpm: 25,
     eff: 5,
     freq: 800
-  });
+  })
 
   async function playCharacter(player: Player, char: string): Promise<void> {
     return new Promise((resolve) => {
       const handler = (eventValue: any) => {
-        console.log(`'char:end' event received for: ${eventValue}, expected: ${char}`);
+        console.log(`'char:end' event received for: ${eventValue}, expected: ${char}`)
         if (eventValue === 'char:end') {
-          //const utterThis = new SpeechSynthesisUtterance(char);
-          //synth.speak(utterThis)
-          sayLetter(char).then(() => {
-            console.log('Finished playing character:', eventValue);
+          
+            console.log('Finished playing character:', eventValue)
+            // Unsubscribe the listener
+            player.subscribers = player.subscribers.filter(
+              (sub) => !(sub.event === 'char:end' && sub.cb === handler)
+            )
 
-            resolve();
-          })
-          // Unsubscribe the listener
-          player.subscribers = player.subscribers.filter(
-            (sub) => !(sub.event === 'char:end' && sub.cb === handler)
-          );
+            resolve()
         }
-      };
-      console.log(`Subscribing to 'char:end' for: ${char}`);
-      player.on('char:end', handler);
-      console.log('Playing:', char);
-      player.play(char);
-    });
+      }
+      console.log(`Subscribing to 'char:end' for: ${char}`)
+      player.on('char:end', handler)
+      console.log('Playing:', char)
+      player.play(char)
+    })
   }
 
   async function playAllCharacters() {
-    console.log("playGroupsAsync " + groups);
+    console.log("playGroupsAsync " + groups)
     for (const letter of letters) {
-      console.log(`Awaiting playCharacter for: ${letter}`);
-      await playCharacter(player, letter);
-      console.log(`Finished awaiting playCharacter for: ${letter}`);
+      console.log(`Awaiting playCharacter for: ${letter}`)
+      await playCharacter(player, letter)
+      console.log(`Finished awaiting playCharacter for: ${letter}`)
+      await sayLetter(letter)
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log(`Finished say playCharacter for: ${letter}`)
     }
-    console.log('Finished playing all characters.');
+    console.log('Finished playing all characters.')
   }
 
-  playAllCharacters();
+  playAllCharacters()
 }
 
 
