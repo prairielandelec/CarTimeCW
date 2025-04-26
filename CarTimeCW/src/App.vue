@@ -15,7 +15,7 @@ const inputValue = ref('')
 
 const synth = window.speechSynthesis
 
-const groupSize = 5
+const groupSize = 1
 
 function logAndSay() {
   console.log(inputValue)
@@ -30,24 +30,24 @@ async function sayLetter(text: string): Promise<void> {
       resolve();
       return;
     }
-    const utterance = new SpeechSynthesisUtterance(text);
+    const utterance = new SpeechSynthesisUtterance(text.toLowerCase()) //Speech synthesis library will say "uppercase" before the letter unless lowercase
 
     utterance.onstart = () => {
-      console.log(`Speech started for: ${text}`);
+      console.log(`Speech started for: ${text}`)
     };
 
     utterance.onend = () => {
-      console.log(`Speech ended for: ${text}`);
+      console.log(`Speech ended for: ${text}`)
       resolve();
     };
 
     utterance.onerror = (event) => {
-      console.error(`Speech synthesis error for: ${text}`, event);
-      resolve(); // Ensure the Promise resolves even on error
+      console.error(`Speech synthesis error for: ${text}`, event)
+      resolve() // Ensure the Promise resolves even on error
     };
 
-    console.log(`Speaking: ${text}`);
-    synth.speak(utterance);
+    console.log(`Speaking: ${text}`)
+    synth.speak(utterance)
   });
 }
 
@@ -87,7 +87,7 @@ function playGroups(groups: string) {
     console.log("playGroupsAsync " + groups)
     const groupArr = [];
     for (let i = 0; i < letters.length; i += groupSize) {
-      groupArr.push(letters.slice(i, i + groupSize));
+      groupArr.push(letters.slice(i, i + groupSize))
     }
     for (let group of groupArr) {
       for (const letter of group) {
@@ -96,14 +96,18 @@ function playGroups(groups: string) {
         console.log(`Finished awaiting playCharacter for: ${letter}`)
         console.log(`Finished say playCharacter for: ${letter}`)
       }
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
+      if (groupSize > 1) {
+        await new Promise(resolve => setTimeout(resolve, 1000))
+      }
       for (const letter of group) {
         await sayLetter(letter)
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 100))
         console.log(`Finished say playCharacter for: ${letter}`)
       }
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      if (groupSize > 1) {
+        await new Promise(resolve => setTimeout(resolve, 1000))
+
+      }
 
     }
 
