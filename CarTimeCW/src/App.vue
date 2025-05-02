@@ -4,8 +4,9 @@
     <main
       style="display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 10px; width: 100%;">
       <SidebarTrigger style="position: absolute; top: 20px; left: 20px; z-index: 10;" />
-      <div :style="{ width: isSmallScreen ? '100%' : '1000px' }">
-      <MainCard v-if="currentView == PageViews.Main" :selected-letter-set="selectedLetterSet" @start-letter-set="sayLetterSet"></MainCard>
+      <div :style="{ width: isSmallScreen ? '100%' : '500px' }">
+        <MainCard v-if="currentView == PageViews.Main" :is-playing="isPlaying" :selected-letter-set="selectedLetterSet"
+          @start-letter-set="sayLetterSet"></MainCard>
       </div>
       <slot />
     </main>
@@ -27,18 +28,14 @@ import { type LetterSet, RandomLetterSet, LWCOSet, speakableChar } from './lib/L
 import { PageViews } from './lib/Consts'
 
 const isSmallScreen = ref(window.innerWidth < 1000)
-const inputValue = ref('')
 const synth = window.speechSynthesis
 const groupSize = 1
+const stopPlaying = ref<boolean>(false)
 //const selectedIndex = ref<number | null>(null)
+const isPlaying = ref<boolean>(false)
 const currentView = ref<PageViews>(PageViews.Main)
 const selectedLetterSet = ref<LetterSet>(LWCOSet)
 selectedLetterSet.value = LWCOSet
-
-onMounted(() => {
-  const myLetterSet = new RandomLetterSet(LWCOSet.slice(0, 5), 10).generateRandomStrings()
-  console.log(myLetterSet)
-})
 
 function handleNewView(view: PageViews) {
   console.log("Current View Before: " + currentView.value)
@@ -47,25 +44,19 @@ function handleNewView(view: PageViews) {
   console.log("Current View After: " + currentView.value)
 }
 
-function logAndSay() {
-  console.log(inputValue)
+function sayLetterSet(payload: { selectedIndex: number, numOfLetters: number }) {
   sayLetter(' ')//This is required for mobile browsers that appear to be very strict about destroying WebAudio context? idk this makes it work though
-
-  console.log("Selected index: " + selectedIndex.value + " Content : " + LWCOSet[selectedIndex.value!] + " slice: " + LWCOSet.slice(0, selectedIndex.value! + 1))
-  if (selectedIndex.value) {
-    const myLetterSet = new RandomLetterSet(LWCOSet.slice(0, selectedIndex.value + 1), 10).generateRandomStrings()
-    playGroups(myLetterSet.join(''))
+  console.log("Got sayLetterSet index: " + payload.selectedIndex)
+  console.log("Got numOfLetters: " + payload.numOfLetters)
+  if (isPlaying.value) {
+    stopPlaying.value = true
+  } else {
+    if (payload.selectedIndex && selectedLetterSet.value) {
+      const myLetterSet = new RandomLetterSet(selectedLetterSet.value.slice(0, payload.selectedIndex + 1), payload.numOfLetters).generateRandomStrings()
+      playGroups(myLetterSet.join(''))
+    }
   }
-}
 
-function sayLetterSet(selectedIndex:number)
-{
-  sayLetter(' ')//This is required for mobile browsers that appear to be very strict about destroying WebAudio context? idk this makes it work though
-  console.log("Got sayLetterSet index: " + selectedIndex)
-  if (selectedIndex &&  selectedLetterSet.value) {
-    const myLetterSet = new RandomLetterSet(selectedLetterSet.value.slice(0, selectedIndex + 1), 10).generateRandomStrings()
-    playGroups(myLetterSet.join(''))
-  }
 }
 
 async function sayLetter(text: string): Promise<void> {
@@ -97,7 +88,7 @@ async function sayLetter(text: string): Promise<void> {
 }
 
 
-function playGroups(groups: string) {
+async function playGroups(groups: string) {
   const letters = Array.from(groups)
 
   const player = new Player({
@@ -129,6 +120,7 @@ function playGroups(groups: string) {
   }
 
   async function playAllCharacters() {
+    isPlaying.value = true
     console.log("playGroupsAsync " + groups)
     const groupArr = [];
     for (let i = 0; i < letters.length; i += groupSize) {
@@ -136,6 +128,12 @@ function playGroups(groups: string) {
     }
     for (let group of groupArr) {
       for (const letter of group) {
+        if (stopPlaying.value) {
+          player.stop()
+          stopPlaying.value = false
+          isPlaying.value = false
+          return
+        }
         console.log(`Awaiting playCharacter for: ${letter}`)
         await playCharacter(player, letter)
         console.log(`Finished awaiting playCharacter for: ${letter}`)
@@ -155,13 +153,12 @@ function playGroups(groups: string) {
       }
 
     }
-
+    isPlaying.value = false
     console.log('Finished playing all characters.')
   }
 
   playAllCharacters()
 }
-
 
 
 </script>
