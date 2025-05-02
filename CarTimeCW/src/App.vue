@@ -1,26 +1,98 @@
 <template>
-  <div>
-    <Input v-model="inputValue" />
-    <Button @click="logAndSay">Click me</Button>
-  </div>
+  <SidebarProvider>
+    <AppSidebar @view-change="handleNewView"/>
+    <main
+      style="display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 10px; width: 100%;">
+      <SidebarTrigger style="position: absolute; top: 20px; left: 20px; z-index: 10;" />
+      <Card v-if="currentView == PageViews.Main" :style="{ width: isSmallScreen ? '100%' : '1000px' }">
+
+        <CardHeader>
+          <CardTitle>Card Title</CardTitle>
+          <CardDescription>Card Description</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div>
+            <Input v-model="inputValue" />
+            <Select v-model="selectedIndex">
+              <SelectTrigger class="w-[180px]">
+                <SelectValue :placeholder="LWCOSet[0].toString()" :value="selectedIndex" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="(item, index) in LWCOSet" :key="index" :value="index">
+                  {{ item.toString() }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <Button @click="logAndSay">Click me</Button>
+          </div>
+        </CardContent>
+        <CardFooter>
+          Card Footer
+        </CardFooter>
+      </Card>
+      <slot />
+    </main>
+  </SidebarProvider>
+
 </template>
 
 <script setup lang="ts">
 import { Button } from '@/components/ui/button'
 import { Input } from './components/ui/input'
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { Player } from 'morse-player'
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
+import AppSidebar from "@/components/AppSidebar.vue"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+
+import { type LetterSet, RandomLetterSet, LWCOSet, speakableChar } from './lib/LetterSets'
+
+import { PageViews } from './lib/Consts'
+
+const isSmallScreen = ref(window.innerWidth < 1000)
 const inputValue = ref('')
-
 const synth = window.speechSynthesis
-
 const groupSize = 1
+const selectedIndex = ref<number | null>(null)
+const currentView = ref<PageViews>(PageViews.Main)
+
+onMounted(() => {
+  const myLetterSet = new RandomLetterSet(LWCOSet.slice(0, 5), 10).generateRandomStrings()
+  console.log(myLetterSet)
+})
+
+function handleNewView(view:PageViews)
+{
+  console.log("Current View Before: " + currentView.value)
+  currentView.value = view
+  console.log("App got new view: " + view)
+  console.log("Current View After: " + currentView.value)
+}
 
 function logAndSay() {
   console.log(inputValue)
-  sayLetter(' ')
-  playGroups(inputValue.value)
+  sayLetter(' ')//This is required for mobile browsers that appear to be very strict about destroying WebAudio context? idk this makes it work though
+
+  console.log("Selected index: " + selectedIndex.value + " Content : " + LWCOSet[selectedIndex.value!] + " slice: " + LWCOSet.slice(0, selectedIndex.value! + 1))
+  if (selectedIndex.value) {
+    const myLetterSet = new RandomLetterSet(LWCOSet.slice(0, selectedIndex.value + 1), 10).generateRandomStrings()
+    playGroups(myLetterSet.join(''))
+  }
 }
 
 async function sayLetter(text: string): Promise<void> {
@@ -30,7 +102,7 @@ async function sayLetter(text: string): Promise<void> {
       resolve();
       return;
     }
-    const utterance = new SpeechSynthesisUtterance(text.toLowerCase()) //Speech synthesis library will say "uppercase" before the letter unless lowercase
+    const utterance = new SpeechSynthesisUtterance(speakableChar(text)) //Speech synthesis library will say "uppercase" before the letter unless lowercase
 
     utterance.onstart = () => {
       console.log(`Speech started for: ${text}`)
