@@ -18,7 +18,7 @@
 
 <script setup lang="ts">
 
-import { onMounted, ref } from 'vue'
+import { ref } from 'vue'
 import { Player } from 'morse-player'
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import AppSidebar from "@/components/AppSidebar.vue"
@@ -29,7 +29,6 @@ import Settings from './components/Settings.vue'
 import { type LetterSet, RandomLetterSet, LWCOSet, speakableChar, availableLetterSets, getSelectedLetterset } from './lib/LetterSets'
 
 import { PageViews, type UserSettings } from './lib/Consts'
-import { watch } from 'vue'
 
 const isSmallScreen = ref(window.innerWidth < 1000)
 const synth = window.speechSynthesis
@@ -41,25 +40,14 @@ const currentView = ref<PageViews>(PageViews.Main)
 const selectedLetterSet = ref<LetterSet>(LWCOSet)
 selectedLetterSet.value = LWCOSet
 
-const userSettings = ref<UserSettings>({ wpm: 30, effectiveWpm: 5, toneFreq: 645, letterSet: availableLetterSets.LWCO })
-
-watch(userSettings, (newValue, oldValue) => {
-  console.log('userSettings changed!');
-  console.log('New value:', newValue);
-  console.log('Old value:', oldValue);
-}, { deep: true });
-
+const userSettings = ref<UserSettings>({ wpm: 28, effectiveWpm: 5, toneFreq: 600, letterSet: availableLetterSets.LWCO })
 
 function handleNewView(view: PageViews) {
-
   currentView.value = view
-
 }
 
 function sayLetterSet(payload: { selectedIndex: number, numOfLetters: number }) {
   sayLetter(' ')//This is required for mobile browsers that appear to be very strict about destroying WebAudio context? idk this makes it work though
-  console.log("Got sayLetterSet index: " + payload.selectedIndex)
-  console.log("Got numOfLetters: " + payload.numOfLetters)
   if (isPlaying.value) {
     stopPlaying.value = true
   } else {
@@ -80,12 +68,7 @@ async function sayLetter(text: string): Promise<void> {
     }
     const utterance = new SpeechSynthesisUtterance(speakableChar(text)) //Speech synthesis library will say "uppercase" before the letter unless lowercase
 
-    utterance.onstart = () => {
-      console.log(`Speech started for: ${text}`)
-    };
-
     utterance.onend = () => {
-      console.log(`Speech ended for: ${text}`)
       resolve();
     };
 
@@ -94,13 +77,16 @@ async function sayLetter(text: string): Promise<void> {
       resolve() // Ensure the Promise resolves even on error
     };
 
-    console.log(`Speaking: ${text}`)
     synth.speak(utterance)
   });
 }
 
 
 async function playGroups(groups: string) {
+  //there is an outstanding bug for the morse code module where the first character played does not take the setOptions
+  //we add an e here to the front of the string and then set a bool to not use speech synth on the first char
+  //There is an open PR to fix this in the morse library but it seems to have been abandoned
+  //If it is ever fixed we need to remove this
   groups = 'e' + groups
   var FirstLetter: Boolean = true
   const letters = Array.from(groups)
@@ -111,37 +97,25 @@ async function playGroups(groups: string) {
     freq: userSettings.value.toneFreq
   })
 
-  console.log(player.getOptions())
-  player.setOptions({ freq: userSettings.value.toneFreq })
-
-
   async function playCharacter(player: Player, char: string): Promise<void> {
     return new Promise((resolve) => {
       const handler = (eventValue: any) => {
-        console.log(`'char:end' event received for: ${eventValue}, expected: ${char}`)
         if (eventValue === 'char:end') {
-
-          console.log('Finished playing character:', eventValue)
           // Unsubscribe the listener
           player.subscribers = player.subscribers.filter(
             (sub) => !(sub.event === 'char:end' && sub.cb === handler)
           )
-
           resolve()
         }
       }
-      console.log(`Subscribing to 'char:end' for: ${char}`)
       player.on('char:end', handler)
-      console.log('Playing:', char)
-      player.setOptions({ freq: userSettings.value.toneFreq})
-      //console.log(player.getOptions())
+      player.setOptions({ freq: userSettings.value.toneFreq, wpm: userSettings.value.wpm, eff: userSettings.value.effectiveWpm })
       player.play(char)
     })
   }
 
   async function playAllCharacters() {
     isPlaying.value = true
-    console.log("playGroupsAsync " + groups)
     const groupArr = [];
     for (let i = 0; i < letters.length; i += groupSize) {
       groupArr.push(letters.slice(i, i + groupSize))
@@ -177,7 +151,6 @@ async function playGroups(groups: string) {
 
     }
     isPlaying.value = false
-    console.log('Finished playing all characters.')
   }
   playAllCharacters()
 }
