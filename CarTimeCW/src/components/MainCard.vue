@@ -29,9 +29,6 @@
                 <Button @click="$emit('startLetterSet', {selectedIndex, numOfLetters})">{{ props.isPlaying ? "Stop" : "Play" }}</Button>
             </div>
         </CardContent>
-        <CardFooter>
-            Card Footer
-        </CardFooter>
     </Card>
 </template>
 
@@ -41,7 +38,6 @@ import {
     Card,
     CardContent,
     CardDescription,
-    CardFooter,
     CardHeader,
     CardTitle,
 } from '@/components/ui/card'

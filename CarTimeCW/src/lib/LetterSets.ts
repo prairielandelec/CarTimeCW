@@ -95,3 +95,16 @@ export function speakableChar(input: string): string{
     }
     return input.toLowerCase()
 }
+
+export enum availableLetterSets
+{
+    LWCO = "LWCO"
+}
+
+export function getSelectedLetterset(selectedLetterset: availableLetterSets): LetterSet
+{
+    switch (selectedLetterset){
+        case availableLetterSets.LWCO: return LWCOSet
+        default: return LWCOSet
+    }
+}

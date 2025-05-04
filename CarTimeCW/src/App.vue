@@ -5,8 +5,10 @@
       style="display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 10px; width: 100%;">
       <SidebarTrigger style="position: absolute; top: 20px; left: 20px; z-index: 10;" />
       <div :style="{ width: isSmallScreen ? '100%' : '500px' }">
-        <MainCard v-if="currentView == PageViews.Main" :is-playing="isPlaying" :selected-letter-set="selectedLetterSet"
-          @start-letter-set="sayLetterSet"></MainCard>
+        <MainCard v-if="currentView == PageViews.Main" :is-playing="isPlaying"
+          :selected-letter-set="getSelectedLetterset(userSettings.letterSet)" @start-letter-set="sayLetterSet">
+        </MainCard>
+        <Settings v-model:user-settings="userSettings" v-if="currentView == PageViews.Settings"></Settings>
       </div>
       <slot />
     </main>
@@ -21,11 +23,13 @@ import { Player } from 'morse-player'
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import AppSidebar from "@/components/AppSidebar.vue"
 import MainCard from './components/MainCard.vue'
+import Settings from './components/Settings.vue'
 
 
-import { type LetterSet, RandomLetterSet, LWCOSet, speakableChar } from './lib/LetterSets'
+import { type LetterSet, RandomLetterSet, LWCOSet, speakableChar, availableLetterSets, getSelectedLetterset } from './lib/LetterSets'
 
-import { PageViews } from './lib/Consts'
+import { PageViews, type UserSettings } from './lib/Consts'
+import { watch } from 'vue'
 
 const isSmallScreen = ref(window.innerWidth < 1000)
 const synth = window.speechSynthesis
@@ -37,11 +41,19 @@ const currentView = ref<PageViews>(PageViews.Main)
 const selectedLetterSet = ref<LetterSet>(LWCOSet)
 selectedLetterSet.value = LWCOSet
 
+const userSettings = ref<UserSettings>({ wpm: 30, effectiveWpm: 5, toneFreq: 645, letterSet: availableLetterSets.LWCO })
+
+watch(userSettings, (newValue, oldValue) => {
+  console.log('userSettings changed!');
+  console.log('New value:', newValue);
+  console.log('Old value:', oldValue);
+}, { deep: true });
+
+
 function handleNewView(view: PageViews) {
-  console.log("Current View Before: " + currentView.value)
+
   currentView.value = view
-  console.log("App got new view: " + view)
-  console.log("Current View After: " + currentView.value)
+
 }
 
 function sayLetterSet(payload: { selectedIndex: number, numOfLetters: number }) {
@@ -89,13 +101,19 @@ async function sayLetter(text: string): Promise<void> {
 
 
 async function playGroups(groups: string) {
+  groups = 'e' + groups
+  var FirstLetter: Boolean = true
   const letters = Array.from(groups)
 
   const player = new Player({
-    wpm: 25,
-    eff: 5,
-    freq: 800
+    wpm: userSettings.value.wpm,
+    eff: userSettings.value.effectiveWpm,
+    freq: userSettings.value.toneFreq
   })
+
+  console.log(player.getOptions())
+  player.setOptions({ freq: userSettings.value.toneFreq })
+
 
   async function playCharacter(player: Player, char: string): Promise<void> {
     return new Promise((resolve) => {
@@ -115,6 +133,8 @@ async function playGroups(groups: string) {
       console.log(`Subscribing to 'char:end' for: ${char}`)
       player.on('char:end', handler)
       console.log('Playing:', char)
+      player.setOptions({ freq: userSettings.value.toneFreq})
+      //console.log(player.getOptions())
       player.play(char)
     })
   }
@@ -134,18 +154,21 @@ async function playGroups(groups: string) {
           isPlaying.value = false
           return
         }
-        console.log(`Awaiting playCharacter for: ${letter}`)
+        //console.log(`Awaiting playCharacter for: ${letter}`)
         await playCharacter(player, letter)
-        console.log(`Finished awaiting playCharacter for: ${letter}`)
-        console.log(`Finished say playCharacter for: ${letter}`)
+        //console.log(`Finished awaiting playCharacter for: ${letter}`)
+        //console.log(`Finished say playCharacter for: ${letter}`)
       }
       if (groupSize > 1) {
         await new Promise(resolve => setTimeout(resolve, 1000))
       }
       for (const letter of group) {
-        await sayLetter(letter)
+        if (!FirstLetter) {
+          await sayLetter(letter)
+        }
+        FirstLetter = false
         await new Promise(resolve => setTimeout(resolve, 100))
-        console.log(`Finished say playCharacter for: ${letter}`)
+        //console.log(`Finished say playCharacter for: ${letter}`)
       }
       if (groupSize > 1) {
         await new Promise(resolve => setTimeout(resolve, 1000))
@@ -156,7 +179,6 @@ async function playGroups(groups: string) {
     isPlaying.value = false
     console.log('Finished playing all characters.')
   }
-
   playAllCharacters()
 }
 
