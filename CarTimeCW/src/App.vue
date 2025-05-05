@@ -9,6 +9,7 @@
           :selected-letter-set="getSelectedLetterset(userSettings.letterSet)" @start-letter-set="sayLetterSet">
         </MainCard>
         <Settings v-model:user-settings="userSettings" v-if="currentView == PageViews.Settings"></Settings>
+        <About v-if="currentView == PageViews.About"></About>
       </div>
       <slot />
     </main>
@@ -24,6 +25,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import AppSidebar from "@/components/AppSidebar.vue"
 import MainCard from './components/MainCard.vue'
 import Settings from './components/Settings.vue'
+import About from './components/About.vue'
 
 
 import { type LetterSet, RandomLetterSet, LWCOSet, speakableChar, availableLetterSets, getSelectedLetterset } from './lib/LetterSets'

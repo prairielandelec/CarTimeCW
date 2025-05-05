@@ -26,11 +26,6 @@ const items = [
     icon: Settings,
   },
   {
-    title: "Custom Data Set",
-    view: PageViews.CustomSet,
-    icon: Braces,
-  },
-  {
     title: "About",
     view: PageViews.About,
     icon: Info,
