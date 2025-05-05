@@ -59,7 +59,7 @@ import {
     NumberFieldInput,
 } from '@/components/ui/number-field'
 
-import { type LetterSet, RandomLetterSet, LWCOSet, speakableChar } from '../lib/LetterSets'
+import { type LetterSet } from '../lib/LetterSets'
 import { ref } from 'vue'
 
 const numOfLetters = ref<number>(30)
@@ -67,6 +67,8 @@ const selectedIndex = ref<number>(0)
 const emit = defineEmits<{
     (e: 'startLetterSet', payload: {selectedIndex: number, numOfLetters: number}): void;
 }>()
+
+void emit; //satisfy the compiler
 
 const props = defineProps<{ selectedLetterSet: LetterSet, isPlaying:boolean }>()
 

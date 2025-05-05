@@ -5,7 +5,7 @@
         </CardHeader>
         <CardContent>
             <div class="grid items-center w-full gap-4 justify-center">
-                <Label for="letterset" style="font-weight: bolder;">Max Letter to Play from Letter Set</Label>
+                <Label for="letterset" style="font-weight: bolder;">Letter Set To Use</Label>
                 <Select>
                     <SelectTrigger class="w-[180px]">
                         <SelectValue :value="userSettings!.letterSet" :placeholder="availableLetterSets.LWCO" />
@@ -46,11 +46,9 @@
 </template>
 
 <script setup lang="ts">
-import { Button } from '@/components/ui/button'
 import {
     Card,
     CardContent,
-    CardDescription,
     CardHeader,
     CardTitle,
 } from '@/components/ui/card'
@@ -72,13 +70,8 @@ import {
     NumberFieldInput,
 } from '@/components/ui/number-field'
 
-import { type LetterSet, RandomLetterSet, LWCOSet, speakableChar, availableLetterSets } from '../lib/LetterSets'
+import { availableLetterSets } from '../lib/LetterSets'
 import { type UserSettings } from '@/lib/Consts'
-import { onMounted, ref, watch } from 'vue'
-
-const numOfLetters = ref<number>(30)
-const selectedIndex = ref<number>(0)
-
 
 const userSettings = defineModel<UserSettings>('userSettings')
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Home,  Settings, Info, Braces } from "lucide-vue-next"
+import { Home,  Settings, Info } from "lucide-vue-next"
 import {
   Sidebar,
   SidebarContent,

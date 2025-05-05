@@ -112,14 +112,8 @@ import {
     Card,
     CardContent,
     CardHeader,
-    CardTitle,
-    CardFooter,
-    CardDescription,
-    CardAction
+    CardTitle
 } from '@/components/ui/card'
-
-import Label from './ui/label/Label.vue';
-import Input from './ui/input/Input.vue';
 
 import {
     Tabs,
