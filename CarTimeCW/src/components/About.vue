@@ -97,7 +97,7 @@
                     </body>
                     <br>
                     <body>
-                        This project relies on the Morse Code package by Andrew Bunker which is inspired by the underlying library used by LWCO.
+                        This project relies on the Morse Player package by Andrew Bunker which is inspired by the underlying library used by LWCO.
                         Andrew's Project can be found here:
                     </body>
                     <a style="font-weight: bold;" href="https://github.com/numinos1/morse-player">https://github.com/numinos1/morse-player</a>
